@@ -1,0 +1,49 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+
+    config.vm.define "Server" do |server|
+
+        server.vm.box = "debian/bookworm64"
+        server.vm.hostname = "k3s-server"
+        server.vm.provider "virtualbox" do |vb|
+            vb.memory = "1024"
+            vb.cpus = 1
+        end
+        server.vm.network "private_network", ip: "192.168.56.110"
+        server.vm.provision "shell", inline: <<-SHELL
+            apt-get update -y
+            apt-get install -y curl
+            curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server \
+            --write-kubeconfig-mode 644 \
+            --bind-address 192.168.56.110 \
+            --node-ip 192.168.56.110 \
+            --advertise-address 192.168.56.110" sh -
+
+            cp /var/lib/rancher/k3s/server/node-token /vagrant/node-token
+        SHELL
+    end
+    config.vm.define "Worker" do |worker|
+
+        worker.vm.box = "debian/bookworm64"
+        worker.vm.hostname = "k3s-worker"
+        worker.vm.provider "virtualbox" do |vb|
+            vb.memory = "1024"
+            vb.cpus = 1
+        end
+        worker.vm.network "private_network", ip: "192.168.56.111"
+        worker.vm.provision "shell", inline: <<-SHELL
+            apt-get update -y
+            apt-get install -y curl 
+
+
+            # Join the worker to the server using the token
+            TOKEN=$(cat /vagrant/node-token)
+            curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent \
+            --server https://192.168.56.110:6443 \
+            --token ${TOKEN} \
+            --node-ip 192.168.56.111" sh -
+        SHELL
+    end
+end
