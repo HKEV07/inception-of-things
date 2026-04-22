@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-one
+  namespace: kube-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app-one
+  template:
+    metadata:
+      labels:
+        app: app-one
+    spec:
+      containers:
+      - name: app-one
+        image: nginxdemos/hello   # simple nginx that shows hello
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-one
+  namespace: kube-system
+spec:
+  selector:
+    app: app-one
+  ports:
+  - port: 80
+    targetPort: 80

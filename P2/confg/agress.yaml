@@ -1,0 +1,41 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: apps-ingress
+  namespace: kube-system
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  rules:
+  # Rule 1: Host app1.com → send to app-one service
+  - host: app1.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: app-one
+            port:
+              number: 80
+  # Rule 2: Host app2.com → send to app-two service
+  - host: app2.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: app-two
+            port:
+              number: 80
+  # Default: no host match → app-three
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: app-three
+            port:
+              number: 80

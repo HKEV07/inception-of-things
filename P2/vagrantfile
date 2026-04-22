@@ -1,0 +1,42 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|  
+    
+    config.vm.define "Server" do |server|
+
+        server.vm.box = "debian/bookworm64"
+        server.vm.hostname = "k3s-server"
+        server.vm.provider "virtualbox" do |vb|
+            vb.memory = "1024"
+            vb.cpus = 1
+        end
+        server.vm.network "private_network", ip: "192.168.56.110"
+        server.vm.provision "shell", inline: <<-SHELL
+            apt-get update -y
+            apt-get install -y curl
+            curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server \
+            --write-kubeconfig-mode 644 \
+            --bind-address 192.168.56.110 \
+            --node-ip 192.168.56.110 \
+            --advertise-address 192.168.56.110" sh -
+        SHELL
+
+        server.vm.provision "shell", inline: <<-SHELL
+            mkdir -p /home/vagrant/.kube
+            cp /etc/rancher/k3s/k3s.yaml /home/vagrant/.kube/config
+            chown vagrant:vagrant /home/vagrant/.kube/config
+            chmod 600 /home/vagrant/.kube/config
+            export KUBECONFIG=/home/vagrant/.kube/config
+        SHELL
+
+        server.vm.provision "file", source: "confg", destination: "/home/vagrant/confg"
+        server.vm.provision "file", source: "scripts/deploy.sh", destination: "/home/vagrant/deploy.sh"
+
+        server.vm.provision "shell", inline: <<-SHELL
+            chmod +x /home/vagrant/deploy.sh
+            sudo -u vagrant bash /home/vagrant/deploy.sh
+        SHELL
+    end
+
+end
