@@ -1,10 +1,9 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-Vagrant.configure("2") do |config|  
-    
-    config.vm.define "Server" do |server|
+Vagrant.configure("2") do |config|
 
+    config.vm.define "Server" do |server|
         server.vm.box = "debian/bookworm64"
         server.vm.hostname = "k3s-server"
         server.vm.provider "virtualbox" do |vb|
@@ -12,30 +11,75 @@ Vagrant.configure("2") do |config|
             vb.cpus = 1
         end
         server.vm.network "private_network", ip: "192.168.56.110"
+
+        # ── Block 1: Install K3s ──────────────────────────────
         server.vm.provision "shell", inline: <<-SHELL
+            export DEBIAN_FRONTEND=noninteractive
             apt-get update -y
             apt-get install -y curl
+
+            echo ">>> Installing K3s..."
             curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server \
-            --write-kubeconfig-mode 644 \
-            --bind-address 192.168.56.110 \
-            --node-ip 192.168.56.110 \
-            --advertise-address 192.168.56.110" sh -
+                --write-kubeconfig-mode 644 \
+                --bind-address 192.168.56.110 \
+                --node-ip 192.168.56.110 \
+                --advertise-address 192.168.56.110" sh -
+
+            # Wait until K3s is fully ready
+            echo ">>> Waiting for K3s to be ready..."
+            while ! kubectl get nodes 2>/dev/null | grep -q "Ready"; do
+                sleep 3
+                echo "still waiting..."
+            done
+            echo ">>> K3s is ready!"
+
+            # Copy token for worker
+            cp /var/lib/rancher/k3s/server/node-token /vagrant/node-token
         SHELL
 
+        # ── Block 2: Setup kubeconfig ─────────────────────────
         server.vm.provision "shell", inline: <<-SHELL
+            echo ">>> Setting up kubeconfig..."
             mkdir -p /home/vagrant/.kube
             cp /etc/rancher/k3s/k3s.yaml /home/vagrant/.kube/config
             chown vagrant:vagrant /home/vagrant/.kube/config
             chmod 600 /home/vagrant/.kube/config
-            export KUBECONFIG=/home/vagrant/.kube/config
+
+            # Add KUBECONFIG to vagrant's bashrc so it persists
+            # This is the correct way — not export in a script
+            echo 'export KUBECONFIG=/home/vagrant/.kube/config' \
+                >> /home/vagrant/.bashrc
         SHELL
 
+        # ── Block 3: Copy config files ────────────────────────
+        # Fixed typo: confg → confs
         server.vm.provision "file", source: "confg", destination: "/home/vagrant/confg"
         server.vm.provision "file", source: "scripts/deploy.sh", destination: "/home/vagrant/deploy.sh"
 
+        # ── Block 4: Deploy apps ──────────────────────────────
         server.vm.provision "shell", inline: <<-SHELL
+            echo ">>> Deploying apps..."
             chmod +x /home/vagrant/deploy.sh
             sudo -u vagrant bash /home/vagrant/deploy.sh
+
+            # Wait for ALL pods to be Running before testing
+            echo ">>> Waiting for pods to be ready..."
+            kubectl wait --for=condition=ready pod \
+                --all \
+                --timeout=120s \
+                --namespace=default
+
+            echo ">>> Testing routing..."
+            echo "--- app1.com ---"
+            curl -s -H "Host: app1.com" http://192.168.56.110 | head -3
+
+            echo "--- app2.com ---"
+            curl -s -H "Host: app2.com" http://192.168.56.110 | head -3
+
+            echo "--- default ---"
+            curl -s http://192.168.56.110 | head -3
+
+            echo ">>> All done!"
         SHELL
     end
 
