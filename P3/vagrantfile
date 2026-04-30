@@ -13,19 +13,27 @@ Vagrant.configure("2") do |config|
         end
         k3d.vm.network "private_network", ip: "192.168.56.120"
 
+        # Copy scripts and configurations
+        k3d.vm.provision "file", source: "scripts", destination: "/home/vagrant/scripts"
+        k3d.vm.provision "file", source: "confs", destination: "/home/vagrant/confs"
+
+        # Install dependencies
         k3d.vm.provision "shell", inline: <<-SHELL
             apt-get update -y
             apt-get install -y curl wget git
         SHELL
 
-        k3d.vm.provision "file", source: "scripts/install.sh", destination: "/home/vagrant/install.sh"
-        k3d.vm.provision "file", source: "scripts/setup-argocd.sh", destination: "/home/vagrant/setup-argocd.sh"
-        k3d.vm.provision "file", source: "confs", destination: "/home/vagrant/confs"
-
+        # Run installation script (Docker, kubectl, K3d)
         k3d.vm.provision "shell", inline: <<-SHELL
-            chmod +x /home/vagrant/install.sh
-            chmod +x /home/vagrant/setup-argocd.sh
-            bash /home/vagrant/install.sh
+            chmod +x /home/vagrant/scripts/install.sh
+            bash /home/vagrant/scripts/install.sh
+        SHELL
+
+        # Wait a bit more and then run Argo CD setup as vagrant user
+        k3d.vm.provision "shell", inline: <<-SHELL
+            chmod +x /home/vagrant/scripts/setup-argocd.sh
+            sleep 10
+            su - vagrant -c "bash /home/vagrant/scripts/setup-argocd.sh"
         SHELL
     end
 

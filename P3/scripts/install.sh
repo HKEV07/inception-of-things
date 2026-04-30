@@ -41,17 +41,17 @@ curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 echo "=== Creating K3d cluster ==="
 sudo -u vagrant bash << 'SETUP'
 export PATH=$PATH:/usr/local/bin
+
 # Create a K3d cluster with port mappings
 k3d cluster create inception \
     --servers 1 \
     --agents 1 \
-    --port 80:80@loadbalancer \
-    --port 443:443@loadbalancer \
     --port 8888:8888@loadbalancer \
-    -v /etc/rancher/k3s/registries.yaml:/etc/rancher/k3s/registries.yaml
+    --port 80:80@loadbalancer \
+    --port 443:443@loadbalancer
 
 # Wait for cluster to be ready
-sleep 10
+sleep 15
 
 # Get kubeconfig
 mkdir -p ~/.kube
