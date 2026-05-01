@@ -1,34 +1,21 @@
+# p3/confs/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: playground
+  name: wil-playground
   namespace: dev
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: playground
+      app: wil-playground
   template:
     metadata:
       labels:
-        app: playground
+        app: wil-playground
     spec:
       containers:
-        - name: playground
-          image: wil42/playground:v1
+        - name: wil-playground
+          image: wil42/playground:v2   # ← change to :v2 to trigger GitOps update
           ports:
             - containerPort: 8888
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: playground
-  namespace: dev
-spec:
-  selector:
-    app: playground
-  ports:
-    - protocol: TCP
-      port: 8888
-      targetPort: 8888
-  type: ClusterIP

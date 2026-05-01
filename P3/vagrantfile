@@ -1,40 +1,20 @@
-# -*- mode: ruby -*-
-# vi: set ft=ruby :
+# p3/Vagrantfile
+Vagrant.configure("2") do |config|
 
-Vagrant.configure("2") do |config|  
-    
-    config.vm.define "K3d" do |k3d|
+  config.vm.box = "debian/bookworm64"   # Debian 12 — latest stable
 
-        k3d.vm.box = "debian/bookworm64"
-        k3d.vm.hostname = "k3d-server"
-        k3d.vm.provider "virtualbox" do |vb|
-            vb.memory = "2048"
-            vb.cpus = 2
-        end
-        k3d.vm.network "private_network", ip: "192.168.56.120"
+  config.vm.define "ibenaaitS" do |server|
+    server.vm.hostname = "ibenaaitS"       # replace 'login' with your login
+    server.vm.network "private_network", ip: "192.168.56.110"
 
-        # Copy scripts and configurations
-        k3d.vm.provision "file", source: "scripts", destination: "/home/vagrant/scripts"
-        k3d.vm.provision "file", source: "confs", destination: "/home/vagrant/confs"
-
-        # Install dependencies
-        k3d.vm.provision "shell", inline: <<-SHELL
-            apt-get update -y
-            apt-get install -y curl wget git
-        SHELL
-
-        # Run installation script (Docker, kubectl, K3d)
-        k3d.vm.provision "shell", inline: <<-SHELL
-            chmod +x /home/vagrant/scripts/install.sh
-            bash /home/vagrant/scripts/install.sh
-        SHELL
-
-        # Wait a bit more and then run Argo CD setup as vagrant user
-        k3d.vm.provision "shell", inline: <<-SHELL
-            chmod +x /home/vagrant/scripts/setup-argocd.sh
-            sleep 10
-            su - vagrant -c "bash /home/vagrant/scripts/setup-argocd.sh"
-        SHELL
+    server.vm.provider "virtualbox" do |vb|
+      vb.name   = "ibenaaitS"
+      vb.cpus   = 2                     # K3d + Docker needs ≥2 CPUs
+      vb.memory = 2048                  # 2 GB minimum for K3d + Argo CD
     end
+
+    # Run the install script once during provisioning
+    server.vm.provision "shell", path: "scripts/install.sh"
+  end
 
 end
