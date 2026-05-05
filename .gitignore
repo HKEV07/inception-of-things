@@ -1,3 +1,6 @@
+P3/.vagrant
+P2/.vagrant
+P1/.vagrant
 .vagrant
 .DS_Store
 *.log
