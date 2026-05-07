@@ -52,7 +52,6 @@ Vagrant.configure("2") do |config|
         SHELL
 
         # ── Block 3: Copy config files ────────────────────────
-        # Fixed typo: confg → confs
         server.vm.provision "file", source: "confg", destination: "/home/vagrant/confg"
         server.vm.provision "file", source: "scripts/deploy.sh", destination: "/home/vagrant/deploy.sh"
 

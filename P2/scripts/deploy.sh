@@ -22,7 +22,7 @@ kubectl apply -f /home/vagrant/confg/app-2.yaml
 kubectl apply -f /home/vagrant/confg/app-3.yaml
 kubectl apply -f /home/vagrant/confg/agress.yaml
 
-echo "Deployment complete!"
-kubectl get deployments -n kube-system
-kubectl get services -n kube-system
-kubectl get ingress -n kube-system
+# echo "Deployment complete!"
+# kubectl get deployments -n kube-system
+# kubectl get services -n kube-system
+# kubectl get ingress -n kube-system
