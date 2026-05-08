@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
         - name: wil-playground
-          image: wil42/playground:v1   # ← change to :v2 to trigger GitOps update
+          image: wil42/playground:v2   # ← change to :v2 to trigger GitOps update
           ports:
             - containerPort: 8888

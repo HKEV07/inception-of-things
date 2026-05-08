@@ -50,9 +50,9 @@ kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v2
 echo 'Waiting for Argo CD components to be created...'
 sleep 15
 echo 'Waiting for Argo CD pods (this may take up to 10 minutes)...'
-kubectl wait --for=condition=Ready pod --all -n argocd --timeout=300s
+kubectl wait --for=condition=Ready pod --all -n argocd --timeout=400s
 
-kubectl -n argocd patch deployment argocd-server --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--insecure"}]'
+kubectl -n argocd patch deployment argocd-server --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--insecure"}]'
 "
 
 echo "=== [6/6] Applying Argo CD Application & Ingress ==="
