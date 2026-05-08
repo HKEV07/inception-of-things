@@ -36,30 +36,33 @@ echo "=== [3/6] Installing K3d ==="
 curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 
 echo "=== [4/6] Creating K3d cluster ==="
-# Run docker commands as vagrant (needs docker group)
-su - vagrant -c "k3d cluster create iot-cluster \
-    --port '8888:30000@loadbalancer' \
+# Map Port 80 for the Ingress Controller
+su - vagrant -c "/usr/local/bin/k3d cluster create iot-cluster \
+    --port '80:80@loadbalancer' \
     --agents 2"
 
-# Export kubeconfig for vagrant user
-su - vagrant -c "k3d kubeconfig merge iot-cluster \
-    --kubeconfig-merge-default"
+su - vagrant -c "/usr/local/bin/k3d kubeconfig merge iot-cluster --kubeconfig-merge-default"
 
 echo "=== [5/6] Installing Argo CD ==="
 su - vagrant -c "
 kubectl create namespace argocd
-kubectl apply -n argocd \
-    -f https://raw.githubusercontent.com/argoproj/argo-cd/v2.12.0/manifests/install.yaml
-# Wait for all Argo CD pods to be ready
-kubectl wait --for=condition=Ready pods \
-    --all -n argocd --timeout=300s
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v2.12.0/manifests/install.yaml
+echo 'Waiting for Argo CD components to be created...'
+sleep 15
+echo 'Waiting for Argo CD pods (this may take up to 10 minutes)...'
+kubectl wait --for=condition=Ready pod --all -n argocd --timeout=300s
+
+kubectl -n argocd patch deployment argocd-server --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--insecure"}]'
 "
 
-echo "=== [6/6] Applying Argo CD Application ==="
+echo "=== [6/6] Applying Argo CD Application & Ingress ==="
 su - vagrant -c "
+# 1. Create the 'dev' namespace explicitly
+kubectl create namespace dev || true 
+sleep 5
 kubectl apply -f /vagrant/confs/application.yaml
+kubectl apply -f /vagrant/confs/ingress.yaml
 "
-
 echo ""
 echo "========================================="
 echo "Waiting for admin secret to be created (this may take a few minutes)..."
@@ -89,37 +92,11 @@ if [ -z "$PASSWORD" ]; then
   echo "  su - vagrant -c \"kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d\""
 fi
 
-echo ""
 echo "========================================="
-echo ""
-echo "To access Argo CD UI from your host machine:"
-echo "  1. Run inside VM:  bash /vagrant/scripts/start-argocd.sh"
-echo "  2. Open on Mac:    https://192.168.56.110:8080"
-echo "  3. Login:          admin / (password above)"
-
-#!/bin/bash
-# Run this manually after vagrant ssh to expose Argo CD UI
-
-export KUBECONFIG=/home/vagrant/.kube/config
-
-# Kill any previous port-forward on 8080
-pkill -f "port-forward.*argocd-server" 2>/dev/null && echo "Killed old port-forward"
-
-echo "Starting Argo CD port-forward in background..."
-nohup kubectl port-forward svc/argocd-server \
-  -n argocd 8080:443 \
-  --address 0.0.0.0 \
-  > /tmp/argocd-portforward.log 2>&1 &
-
-PF_PID=$!
-sleep 2
-
-# Verify it actually started
-if kill -0 $PF_PID 2>/dev/null; then
-  echo "✓ Port-forward running (PID $PF_PID)"
-  echo "✓ Open https://192.168.56.110:8080 on your Mac"
-  echo "  Logs: tail -f /tmp/argocd-portforward.log"
-else
-  echo "✗ Port-forward failed — check logs:"
-  cat /tmp/argocd-portforward.log
-fi
+echo "PRO SETUP COMPLETE"
+echo "Application: http://app.iot.com"
+echo "Argo CD UI:  http://argocd.iot.com"
+echo "User: admin  |  Pass: $PASSWORD"
+echo "========================================="
+echo "NOTE: Make sure your host machine /etc/hosts has:"
+echo "192.168.56.110 app.iot.com argocd.iot.com"
