@@ -4,7 +4,6 @@ metadata:
   name: wil-playground
   namespace: dev
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app: wil-playground
@@ -15,7 +14,7 @@ spec:
     spec:
       containers:
       - name: wil-playground
-        image: wil42/playground:v1 
+        image: wil42/playground:v1 # Change to v2 during defense to show sync
         ports:
         - containerPort: 8888
 ---
@@ -27,9 +26,6 @@ metadata:
 spec:
   selector:
     app: wil-playground
-  type: NodePort
   ports:
-    - protocol: TCP
-      port: 8888
-      targetPort: 8888
-      nodePort: 30007
+  - port: 8888
+    targetPort: 8888
