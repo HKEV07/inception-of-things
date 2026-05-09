@@ -10,7 +10,7 @@ spec:
   source:
     repoURL: https://github.com/HKEV07/inception-of-things.git
     targetRevision: main
-    path: P3/confs
+    path: p3/confs
 
   destination:
     server: https://kubernetes.default.svc
