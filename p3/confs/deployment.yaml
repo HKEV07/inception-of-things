@@ -17,15 +17,3 @@ spec:
         image: wil42/playground:v2 # Change to v2 during defense to show sync
         ports:
         - containerPort: 8888
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: wil-playground-service
-  namespace: dev
-spec:
-  selector:
-    app: wil-playground
-  ports:
-  - port: 8888
-    targetPort: 8888
