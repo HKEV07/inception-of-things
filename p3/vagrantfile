@@ -1,0 +1,20 @@
+# p3/Vagrantfile
+Vagrant.configure("2") do |config|
+
+  config.vm.box = "debian/bookworm64"   # Debian 12 — latest stable
+
+  config.vm.define "ibenaaitS" do |server|
+    server.vm.hostname = "ibenaaitS"       # replace 'login' with your login
+    server.vm.network "private_network", ip: "192.168.56.110"
+
+    server.vm.provider "virtualbox" do |vb|
+      vb.name   = "ibenaaitS"
+      vb.cpus   = 2                     # K3d + Docker needs ≥2 CPUs
+      vb.memory = 2048                  # 2 GB minimum for K3d + Argo CD
+    end
+
+    # Run the install script once during provisioning
+    server.vm.provision "shell", path: "scripts/install.sh"
+  end
+
+end
