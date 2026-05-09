@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: wil-playground
-        image: wil42/playground:v1 # Change to v2 during defense to show sync
+        image: wil42/playground:v2 # Change to v2 during defense to show sync
         ports:
         - containerPort: 8888
 ---
